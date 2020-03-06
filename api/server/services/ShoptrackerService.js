@@ -201,7 +201,6 @@ currentOrders
     } catch (error) {
       throw error;
     }
-    console.log(orderParts);
     return orderParts;
   }
 
@@ -209,7 +208,7 @@ currentOrders
     try {
       const orderItemData = await shopdb.poitems.findAll({ where: { poId: id } });
       const orderItems = orderItemData.map(orderItem => orderItem.dataValues);
-
+      console.log(orderItems);
       return orderItems;
     } catch (error) {
       throw error;
@@ -350,20 +349,55 @@ updateParts
     - Update status of part to reflect all the changed values
  */
 
-  static async updateParts(part) {
+  static async updatePart(part) {
     try {
       await shopdb.part.update(part, { where: { id: part.id } });
+      const updatedPart = await shopdb.part.findOne({
+        where: { id: part.id }
+      });
+      return updatedPart;
     } catch (error) {
       throw error;
     }
   }
 
   static async updateOrder(order) {
+    console.log('in updateOrder');
     try {
-      await shopdb.po.update(order, { where: { poId: order.id } });
+      await shopdb.po.update(order, { where: { id: order.id } });
+      const updatedOrder = await shopdb.po.findOne({
+        where: { id: order.id }
+      });
+      return updatedOrder;
     } catch (error) {
       throw error;
     }
+  }
+
+  static async updateOrderItem(orderitem) {
+    console.log('in updateOrderItems')
+    try {
+      await shopdb.poitems.update(orderitem, { where: { id: orderitem.id } });
+      const updatedOrderItem = await shopdb.poitems.findOne({
+        where: { id: orderitem.id }
+      });
+      console.log(updatedOrderItem);
+      return updatedOrderItem;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getPart(id) {
+    try {
+      const part = await shopdb.part.findOne({
+        where: { id: id }
+      });
+      return part;
+    } catch (error) {
+      throw error;
+    }
+
   }
 }
 

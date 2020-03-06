@@ -7,6 +7,11 @@ router.get('/', ShoptrackerController.getOpenOrders);
 // router.post('/', BookController.addNewOrder);
 router.get('/:id', ShoptrackerController.getOrderItems);
 router.get('/add/:id', ShoptrackerController.addNewOrder);
+router.get('/part/:id', ShoptrackerController.getPart);
+router.post('/update/part/', ShoptrackerController.updatePart);
+router.post('/update/order/', ShoptrackerController.updateOrder);
+router.post('/update/orderitem/', ShoptrackerController.updateOrderItem);
+
 // router.delete('/:id', BookController.deleteBook);
 
 export default router;
