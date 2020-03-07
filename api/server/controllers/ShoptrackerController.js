@@ -21,7 +21,7 @@ class ShoptrackerController {
 
   static async getOrderItems(req, res) {
     const { id } = req.params;
-    console.log("in Controller...");
+    console.log("in getOrderItems Controller...");
     if (!Number(id)) {
       util.setError(400, "Please input a valid numeric value");
       return util.send(res);
@@ -48,7 +48,7 @@ class ShoptrackerController {
 
   static async addNewOrder(req, res) {
     const { id } = req.params;
-    console.log("in Controller...");
+    console.log("in Add New Order Controller...");
     if (!Number(id)) {
       util.setError(400, "Please input a valid numeric value");
       return util.send(res);
@@ -68,6 +68,22 @@ class ShoptrackerController {
       return util.send(res);
     }
   }
+
+  static async getAllParts(req, res) {
+    try {
+      const allParts = await ShoptrackerService.getAllParts();
+      if (allParts.length > 0) {
+        util.setSuccess(200, "Parts retrieved", allParts);
+      } else {
+        util.setSuccess(200, "No parts found");
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(400, error);
+      return util.send(res);
+    }
+  }
+
 
   static async getPart(req, res) {
     const { id } = req.params;
@@ -143,6 +159,33 @@ class ShoptrackerController {
     const orderitem = req.body;
     try {
       const updatedOrderItem = await ShoptrackerService.updateOrderItem(orderitem);
+      if (!updatedOrderItem) {
+        util.setError(404, `Cannot find orderitem with the id: ${orderitem.id}`);
+      } else {
+        util.setSuccess(200, "Orderitem updated.", updatedOrderItem);
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(404, error);
+      return util.send(res);
+    }
+  }
+
+
+  static async updateQueue(req, res) {
+    if (!req.body.previousOrder ||
+        !req.body.movedOrder ||
+        !req.body.nextOrder) {
+      util.setError(400, "Please provide complete details");
+      return util.send(res);
+    }
+
+    const previousOrder = req.body.previousOrder;
+    const movedOrder = req.body.movedOrder;
+    const nextOrder = req.body.nextOrder;
+
+    try {
+      const updatedOrder = await ShoptrackerService.reorderList(previousOrder, movedOrder, nextOrder);
       if (!updatedOrderItem) {
         util.setError(404, `Cannot find orderitem with the id: ${orderitem.id}`);
       } else {

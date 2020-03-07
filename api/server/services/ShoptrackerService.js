@@ -388,6 +388,16 @@ updateParts
     }
   }
 
+  static async getAllParts() {
+    try {
+      return await shopdb.part.findAll({
+        attributes: ['id', 'num', 'desc']
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async getPart(id) {
     try {
       const part = await shopdb.part.findOne({
