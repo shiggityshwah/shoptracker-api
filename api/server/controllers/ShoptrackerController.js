@@ -69,13 +69,13 @@ class ShoptrackerController {
     }
   }
 
-  static async getAllParts(req, res) {
+  static async getPartList(req, res) {
     try {
-      const allParts = await ShoptrackerService.getAllParts();
-      if (allParts.length > 0) {
-        util.setSuccess(200, "Parts retrieved", allParts);
+      const partList = await ShoptrackerService.getPartList();
+      if (partList.length > 0) {
+        util.setSuccess(200, "list of all parts retrieved", partList);
       } else {
-        util.setSuccess(200, "No parts found");
+        util.setSuccess(200, "no parts found");
       }
       return util.send(res);
     } catch (error) {
@@ -84,28 +84,34 @@ class ShoptrackerController {
     }
   }
 
-
-  static async getPart(req, res) {
+  static async getPartData(req, res) {
     const { id } = req.params;
+    let partData;
 
-    if (!Number(id)) {
-      util.setError(400, "please input a valid numeric value");
-      return util.send(res);
-    }
-
-    try {
-      const part = await ShoptrackerService.getPart(id);
-
-      if (!part) {
-        util.setError(404, `Unable to find part with the id ${id}`);
-      } else {
-        util.setSuccess(200, "fetched part #" + part.num, part);
+    if (id == "all") {
+      try {
+        partData = await ShoptrackerService.getAllParts();
+      } catch (error) {
+        util.setError(404, error);
+        return util.send(res);
       }
-      return util.send(res);
-    } catch (error) {
-      util.setError(404, error);
-      return util.send(res);
+    } else if (!Number(id)) {
+      util.setError(400, "please input a valid numeric value");
+    } else {
+      try {
+        partData = await ShoptrackerService.getPart(id);
+      } catch (error) {
+        util.setError(404, error);
+        return util.send(res);
+      }
     }
+
+    if (!partData) {
+      util.setError(404, `Unable to find part with the id ${id}`);
+    } else {
+      util.setSuccess(200, "fetched part data", partData);
+    }
+    return util.send(res);
   }
 
   static async updatePart(req, res) {
@@ -158,9 +164,14 @@ class ShoptrackerController {
 
     const orderitem = req.body;
     try {
-      const updatedOrderItem = await ShoptrackerService.updateOrderItem(orderitem);
+      const updatedOrderItem = await ShoptrackerService.updateOrderItem(
+        orderitem
+      );
       if (!updatedOrderItem) {
-        util.setError(404, `Cannot find orderitem with the id: ${orderitem.id}`);
+        util.setError(
+          404,
+          `Cannot find orderitem with the id: ${orderitem.id}`
+        );
       } else {
         util.setSuccess(200, "Orderitem updated.", updatedOrderItem);
       }
@@ -171,11 +182,12 @@ class ShoptrackerController {
     }
   }
 
-
   static async updateQueue(req, res) {
-    if (!req.body.previousOrder ||
-        !req.body.movedOrder ||
-        !req.body.nextOrder) {
+    if (
+      !req.body.previousOrder ||
+      !req.body.movedOrder ||
+      !req.body.nextOrder
+    ) {
       util.setError(400, "Please provide complete details");
       return util.send(res);
     }
@@ -185,9 +197,16 @@ class ShoptrackerController {
     const nextOrder = req.body.nextOrder;
 
     try {
-      const updatedOrder = await ShoptrackerService.reorderList(previousOrder, movedOrder, nextOrder);
+      const updatedOrder = await ShoptrackerService.reorderList(
+        previousOrder,
+        movedOrder,
+        nextOrder
+      );
       if (!updatedOrderItem) {
-        util.setError(404, `Cannot find orderitem with the id: ${orderitem.id}`);
+        util.setError(
+          404,
+          `Cannot find orderitem with the id: ${orderitem.id}`
+        );
       } else {
         util.setSuccess(200, "Orderitem updated.", updatedOrderItem);
       }

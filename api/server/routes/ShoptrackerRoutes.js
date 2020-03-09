@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import ShoptrackerController from '../controllers/ShoptrackerController';
-import ShoptrackerService from '../services/ShoptrackerService';
 
 const router = Router();
 
@@ -8,8 +7,8 @@ router.get('/', ShoptrackerController.getOpenOrders);
 // router.post('/', BookController.addNewOrder);
 router.get('/:id', ShoptrackerController.getOrderItems);
 router.get('/add/:id', ShoptrackerController.addNewOrder);
-router.get('/parts/all/', ShoptrackerController.getAllParts);
-router.get('/part/:id', ShoptrackerController.getPart);
+router.get('/parts/all/', ShoptrackerController.getPartList);
+router.get('/part/:id', ShoptrackerController.getPartData);
 router.post('/update/part/', ShoptrackerController.updatePart);
 router.post('/update/order/', ShoptrackerController.updateOrder);
 router.post('/update/orderitem/', ShoptrackerController.updateOrderItem);

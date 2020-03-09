@@ -4,8 +4,8 @@ import FishbowlService from "./FishbowlService";
 const Op = shopdb.Sequelize.Op;
 
 class ShoptrackerService {
-  /*
-addNewOrder
+  /** 
+* addNewOrder
 
 - Action: Clicking "+" button next to PO on Orders Component.
 
@@ -117,7 +117,6 @@ addNewOrder
 
   static async addOrder(order, orderItems) {
     console.log("adding order num:" + order.num);
-
 
     try {
       console.log(order);
@@ -388,11 +387,19 @@ updateParts
     }
   }
 
-  static async getAllParts() {
+  static async getPartList() {
     try {
       return await shopdb.part.findAll({
         attributes: ['id', 'num', 'desc']
       });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getAllParts() {
+    try {
+      return await shopdb.part.findAll();
     } catch (error) {
       throw error;
     }
