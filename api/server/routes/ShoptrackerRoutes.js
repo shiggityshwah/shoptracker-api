@@ -4,7 +4,6 @@ import ShoptrackerController from '../controllers/ShoptrackerController';
 const router = Router();
 
 router.get('/', ShoptrackerController.getOpenOrders);
-// router.post('/', BookController.addNewOrder);
 router.get('/:id', ShoptrackerController.getOrderItems);
 router.get('/add/:id', ShoptrackerController.addNewOrder);
 router.get('/parts/all/', ShoptrackerController.getPartList);
@@ -14,22 +13,23 @@ router.post('/update/order/', ShoptrackerController.updateOrder);
 router.post('/update/orderitem/', ShoptrackerController.updateOrderItem);
 router.post('/update/queue/', ShoptrackerController.updateQueue);
 
+
+//partlist - get
+//part/create - post
+//part/read - get
+//part/update - put
+//part/delete - delete
+//order/create - post
+//order/read - get
+//order/update - put
+//order/delete - delete
+//orderitem/create - post
+//orderitem/read - get
+//orderitem/update - put
+//orderitem/delete - delete
+//queue/update - put
+
+
 // router.delete('/:id', BookController.deleteBook);
 
 export default router;
-
-// app.get("/", function(req, res) {
-//     res.send("hello");
-//   });
-//   app.get("/orders", (req, res) => {
-//     orders.findOpenOrders(req, res, fbdb);
-//   });
-//   app.get("/newOrders", (req, res) => {
-//     newOrders.fetchNewOrders(req, res, fbdb, shopdb);
-//   });
-//   app.get("/addNewOrder", (req, res) => {
-//     addNewOrder.addNewOrder(req, res, fbdb, shopdb);
-//   });
-//   app.post("/order", (req, res) => {
-//     orderItems.findOrderItems(req, res, fbdb);
-//   });
