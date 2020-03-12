@@ -4,35 +4,33 @@ import FishbowlService from "./FishbowlService";
 const Op = shopdb.Sequelize.Op;
 
 class ShoptrackerService {
-  /** 
-* addNewOrder
+  /**
+   * * Fishbowl Interaction Services *
+   */
 
-- Action: Clicking "+" button next to PO on Orders Component.
-
-- API will:
-    - Update the status of that PO in the machinist database
-    - Query the fishbowl database for PO Items and part information
-    - Insert the PO Items into the machinist database
-    - Query the machinist database for the each part to see if it exists in the system.
-    - Insert new parts into the machinist database
-
- */
-
-  static async addNewOrder(id) {
+  static async addFishbowlOrder(id) {
     try {
       console.log("in Service...");
-      const orderData = await FishbowlService.getOrder(id);
+      const fishbowlOrderData = await FishbowlService.getOrder(id);
       console.log("received order data..");
-      const orderItemData = await FishbowlService.getOrderItems(id);
+      const fishbowlOrderItemData = await FishbowlService.getOrderItems(id);
       console.log("received order item data..");
       const lastPO = await this.getLastPO();
       console.log("received lastPO..");
-      const partIds = await this.findAndAddNewParts(orderItemData);
+      const partIds = await this.findOrCreateNewParts(fishbowlOrderItemData);
       console.log("added parts..");
-      const order = this.prepOrderData(orderData, orderItemData, lastPO);
-      const orderItems = this.prepOrderItemData(orderItemData, order, partIds);
+      const order = this.prepFishbowlOrderData(
+        fishbowlOrderData,
+        fishbowlOrderItemData,
+        lastPO
+      );
+      const orderItems = this.prepFishbowlOrderItemData(
+        fishbowlOrderItemData,
+        order,
+        partIds
+      );
       console.log("prepped order data...");
-      const addedOrder = await this.addOrder(order, orderItems);
+      const addedOrder = await this.createOrder(order, orderItems);
       console.log(addedOrder);
       return addedOrder.dataValues;
     } catch (error) {
@@ -40,20 +38,53 @@ class ShoptrackerService {
     }
   }
 
-  static async getLastPO() {
-    const lastOrder = await shopdb.lastpo.findOne({
-      attribute: ["lastPO"],
-      where: { id: 1 }
+  static prepFishbowlOrderData(
+    fishbowlOrderData,
+    fishbowlOrderItemData,
+    lastPO
+  ) {
+    let partQty = 0;
+    console.log("prepping order data");
+    fishbowlOrderItemData.map(item => {
+      partQty += parseInt(item.qtyToFulfill);
     });
-    return lastOrder.lastPO;
+    console.log("last PO is " + lastPO);
+    return {
+      poId: fishbowlOrderData.id,
+      num: fishbowlOrderData.num,
+      buyer: fishbowlOrderData.buyer,
+      note: fishbowlOrderData.note,
+      dateIssued: fishbowlOrderData.dateIssued,
+      dateLastModified: new Date().toLocaleString(),
+      status: "PENDING",
+      dateRequested: fishbowlOrderData.dateFirstShip,
+      priority: 2,
+      partQty: partQty,
+      nextPO: lastPO
+    };
   }
 
-  static async findAndAddNewParts(orderItemsData) {
+  static prepFishbowlOrderItemData(fishbowlOrderItemData, order, partIds) {
+    let orderItems = [];
+    console.log(fishbowlOrderItemData.length);
+    for (let i = 0; i < fishbowlOrderItemData.length; i++) {
+      orderItems.push({
+        poId: order.poId,
+        partId: partIds[i],
+        qty: fishbowlOrderItemData[i].qtyToFulfill,
+        lastUpdate: new Date().toLocaleString()
+      });
+    }
+
+    return orderItems;
+  }
+
+  static async findOrCreateNewFishbowlParts(fishbowlOrderItemsData) {
     let partIds = [];
     const t = await shopdb.sequelize.transaction();
 
     try {
-      for (const item of orderItemsData) {
+      for (const item of fishbowlOrderItemsData) {
         const [part, created] = await shopdb.part.findOrCreate({
           where: {
             num: item.partNum,
@@ -78,44 +109,11 @@ class ShoptrackerService {
     return partIds;
   }
 
-  static prepOrderData(orderData, orderItemData, lastPO) {
-    let partQty = 0;
-    console.log("prepping order data");
-    orderItemData.map(item => {
-      partQty += parseInt(item.qtyToFulfill);
-    });
-    console.log("last PO is " + lastPO);
-    return {
-      poId: orderData.id,
-      num: orderData.num,
-      buyer: orderData.buyer,
-      note: orderData.note,
-      dateIssued: orderData.dateIssued,
-      dateLastModified: new Date().toLocaleString(),
-      status: "PENDING",
-      dateRequested: orderData.dateFirstShip,
-      priority: 2,
-      partQty: partQty,
-      nextPO: lastPO
-    };
-  }
+  /**
+   * * Order Services *
+   */
 
-  static prepOrderItemData(orderItemData, order, partIds) {
-    let orderItems = [];
-    console.log(orderItemData.length);
-    for (let i = 0; i < orderItemData.length; i++) {
-      orderItems.push({
-        poId: order.poId,
-        partId: partIds[i],
-        qty: orderItemData[i].qtyToFulfill,
-        lastUpdate: new Date().toLocaleString()
-      });
-    }
-
-    return orderItems;
-  }
-
-  static async addOrder(order, orderItems) {
+  static async createOrder(order, orderItems) {
     console.log("adding order num:" + order.num);
 
     try {
@@ -139,10 +137,8 @@ class ShoptrackerService {
       });
       console.log("Created is " + created);
 
-      if (created) {
-        shopdb.poitems.bulkCreate(
-          orderItems
-        );
+      if (created && orderItems.length > 0) {
+        shopdb.poitems.bulkCreate(orderItems);
 
         shopdb.lastpo.update(
           { lastPO: order.poId },
@@ -155,30 +151,51 @@ class ShoptrackerService {
     } catch (error) {
       throw error;
     }
-
-    return newOrder;
   }
 
-  /*
-currentOrders
+  static async prepAndCreateOrder(orderData, orderItemData) {
+    const lastPO = await this.getLastPO();
+    const parts = await this.findOrCreateNewParts(OrderItemData);
+    const order = this.prepOrderData(orderData, orderItemData, lastPO);
+    const orderItems = this.prepOrderItemData(orderItemData, order, parts);
+    const addedOrder = await this.createOrder(order, orderItems);
+    console.log(addedOrder);
+    return addedOrder.dataValues;
+  }
 
-- Action: Opening Current Orders component.
+  static prepOrderData(OrderData, OrderItemData, lastPO) {
+    let partQty = 0;
+    console.log("prepping order data");
+    OrderItemData.map(item => {
+      partQty += parseInt(item.qty);
+    });
+    console.log("last PO is " + lastPO);
+    return {
+      poId: OrderData.id,
+      num: OrderData.num,
+      buyer: OrderData.buyer,
+      note: OrderData.note,
+      dateIssued: OrderData.dateIssued,
+      dateLastModified: new Date().toLocaleString(),
+      status: "PENDING",
+      dateRequested: OrderData.dateFirstShip,
+      priority: 2,
+      partQty: partQty,
+      nextPO: lastPO
+    };
+  }
 
-- API will:
-    - Query machinist database for all PO with "open" status along with all their items and part info.
-    - return results
-
- */
-
-  static async getOpenOrders() {
+  static async getAllOpenOrders() {
     try {
-      return await shopdb.po.findAll({ where: {status: { [Op.ne]: "CLOSED"} } });
+      return await shopdb.po.findAll({
+        where: { status: { [Op.ne]: "CLOSED" } }
+      });
     } catch (error) {
       throw error;
     }
   }
 
-  static async ordersWithStatus(status) {
+  static async getOrdersWithStatus(status) {
     try {
       return await shopdb.po.findAll({ where: { status: status } });
     } catch (error) {
@@ -195,7 +212,7 @@ currentOrders
         const part = await shopdb.part.findOne({
           where: { id: item.partId }
         });
-        orderParts.push(Object.assign(part.dataValues, item))
+        orderParts.push(Object.assign(part.dataValues, item));
       }
     } catch (error) {
       throw error;
@@ -205,7 +222,9 @@ currentOrders
 
   static async getOrderItems(id) {
     try {
-      const orderItemData = await shopdb.poitems.findAll({ where: { poId: id } });
+      const orderItemData = await shopdb.poitems.findAll({
+        where: { poId: id }
+      });
       const orderItems = orderItemData.map(orderItem => orderItem.dataValues);
       console.log(orderItems);
       return orderItems;
@@ -214,15 +233,179 @@ currentOrders
     }
   }
 
-  /*
-reorderList
+  static async updateOrder(order) {
+    console.log("in updateOrder");
+    try {
+      await shopdb.po.update(order, { where: { id: order.id } });
+      const updatedOrder = await shopdb.po.findOne({
+        where: { id: order.id }
+      });
+      return updatedOrder;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-- Action: Saving reordered list of POs
+  /**
+   * * Order Item Services *
+   */
 
-- API will:
-    - Update the nextId column for the POs listed in the request.
+  static async finishOrderItem(itemId) {
+    try {
+      const date = new Date().toLocaleString();
+      const item = await shopdb.poitem.update(
+        { dateComplete: date },
+        { where: { id: itemId } }
+      );
+      const orderComplete = await this.checkOrderComplete(item.poId);
+      if (orderComplete) {
+        await shopdb.po.update(
+          {
+            dateComplete: date,
+            dateLastModified: date,
+            status: "COMPLETE"
+          },
+          { where: { poId: item.poId } }
+        );
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+  //undoCompleteItem, checks if order was complete and undos finishItem
 
- */
+  static async checkOrderCompletion(poId) {
+    try {
+      const incompleteOrderItems = await shopdb.poitem.findAll({
+        where: { poId: poId, dateComplete: null }
+      });
+
+      if (incompleteOrderItems.length > 0) {
+        return false;
+      } else {
+        return true;
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async updateItem(item) {
+    try {
+      await shopdb.poitem.update(item, { where: { id: item.id } });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async updateOrderItem(orderitem) {
+    console.log("in updateOrderItems");
+    try {
+      await shopdb.poitems.update(orderitem, { where: { id: orderitem.id } });
+      const updatedOrderItem = await shopdb.poitems.findOne({
+        where: { id: orderitem.id }
+      });
+      console.log(updatedOrderItem);
+      return updatedOrderItem;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static prepOrderItemData(OrderItemData, order, parts) {
+    let orderItems = [];
+    console.log(OrderItemData.length);
+    for (let i = 0; i < OrderItemData.length; i++) {
+      orderItems.push({
+        poId: order.poId,
+        partId: parts[i].id,
+        qty: OrderItemData[i].qty,
+        lastUpdate: new Date().toLocaleString()
+      });
+    }
+    return orderItems;
+  }
+
+  /**
+   * * Part Services *
+   */
+  static async updatePart(part) {
+    try {
+      await shopdb.part.update(part, { where: { id: part.id } });
+      const updatedPart = await shopdb.part.findOne({
+        where: { id: part.id }
+      });
+      return updatedPart;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getPartList() {
+    try {
+      return await shopdb.part.findAll({
+        attributes: ["id", "num", "desc"]
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getAllParts() {
+    try {
+      return await shopdb.part.findAll();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getPart(id) {
+    try {
+      const part = await shopdb.part.findOne({
+        where: { id: id }
+      });
+      return part;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async findOrCreateNewParts(orderItemsData) {
+    let parts = [];
+    const t = await shopdb.sequelize.transaction();
+
+    try {
+      for (const item of orderItemsData) {
+        const [part, created] = await shopdb.part.findOrCreate({
+          where: {
+            num: item.num,
+            rev: item.rev
+          },
+          defaults: {
+            num: item.num,
+            rev: item.rev,
+            desc: item.desc,
+            processing: item.processing,
+            material: item.material,
+            timeEstimate: item.timeEstimate
+          },
+          transation: t
+        });
+        parts.push(part);
+      }
+
+      await t.commit();
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+
+    return parts;
+  }
+
+  /**
+   * * Queue Services *
+   */
   static updateListOrder(updatedList) {
     try {
       shopdb.transaction(t => {
@@ -241,7 +424,7 @@ reorderList
     }
   }
 
-  static reorderList(previousOrder, movedOrder, nextOrder) {
+  static updateQueue(previousOrder, movedOrder, nextOrder) {
     try {
       shopdb.transaction(t => {
         shopdb.po.update(
@@ -269,152 +452,13 @@ reorderList
       throw error;
     }
   }
-  /*
-finishItem
 
-- Action: Clicking "√" next to a PO Item
-
-- API will:
-    - Update status of PO Item to "completed"
-    - Query status of all PO Items with same PO id.
-    - if all items completed, change status of PO to "complete" return id and nextId
-    - query PO with nextId matching the id of newly completed PO and update it
-
- */
-
-  static async finishItem(itemId) {
-    try {
-      const date = new Date().toLocaleString();
-      const item = await shopdb.poitem.update(
-        { dateComplete: date },
-        { where: { id: itemId } }
-      );
-      const orderComplete = await this.checkOrderComplete(item.poId);
-      if (orderComplete) {
-        await shopdb.po.update(
-          {
-            dateComplete: date,
-            dateLastModified: date,
-            status: "COMPLETE"
-          },
-          { where: { poId: item.poId } }
-        );
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-  //undoCompleteItem, checks if order was complete and undos finishItem
-
-  static async checkOrderComplete(poId) {
-    try {
-      const incompleteOrderItems = await shopdb.poitem.findAll({
-        where: { poId: poId, dateComplete: null }
-      });
-
-      if (incompleteOrderItems.length > 0) {
-        return false;
-      } else {
-        return true;
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /*
-updateItem
-
-- Action: Clicking "Save" button next to a PO item
-
-- API will:
-    - Update status of PO item to reflect all the changed values
-
- */
-  static async updateItem(item) {
-    try {
-      await shopdb.poitem.update(item, { where: { id: item.id } });
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /*
-updateParts
-
-- Action: Clicking "Save" button next to a part.
-
-- API will:
-    - Update status of part to reflect all the changed values
- */
-
-  static async updatePart(part) {
-    try {
-      await shopdb.part.update(part, { where: { id: part.id } });
-      const updatedPart = await shopdb.part.findOne({
-        where: { id: part.id }
-      });
-      return updatedPart;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async updateOrder(order) {
-    console.log('in updateOrder');
-    try {
-      await shopdb.po.update(order, { where: { id: order.id } });
-      const updatedOrder = await shopdb.po.findOne({
-        where: { id: order.id }
-      });
-      return updatedOrder;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async updateOrderItem(orderitem) {
-    console.log('in updateOrderItems')
-    try {
-      await shopdb.poitems.update(orderitem, { where: { id: orderitem.id } });
-      const updatedOrderItem = await shopdb.poitems.findOne({
-        where: { id: orderitem.id }
-      });
-      console.log(updatedOrderItem);
-      return updatedOrderItem;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async getPartList() {
-    try {
-      return await shopdb.part.findAll({
-        attributes: ['id', 'num', 'desc']
-      });
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async getAllParts() {
-    try {
-      return await shopdb.part.findAll();
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async getPart(id) {
-    try {
-      const part = await shopdb.part.findOne({
-        where: { id: id }
-      });
-      return part;
-    } catch (error) {
-      throw error;
-    }
-
+  static async getLastPO() {
+    const lastOrder = await shopdb.lastpo.findOne({
+      attribute: ["lastPO"],
+      where: { id: 1 }
+    });
+    return lastOrder.lastPO;
   }
 }
 
