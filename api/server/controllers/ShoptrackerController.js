@@ -74,7 +74,7 @@ class ShoptrackerController {
           if (allOpenOrders.length > 0) {
             util.setSuccess(200, "Orders retrieved", allOpenOrders);
           } else {
-            util.setSuccess(200, "No open orders found");
+            util.setError(404, "No open orders found");
           }
           return util.send(res);
         } catch (error) {
@@ -88,9 +88,9 @@ class ShoptrackerController {
             closed
           );
           if (closedOrders.length > 0) {
-            util.setSuccess(200, "Orders retrieved", allOpenOrders);
+            util.setSuccess(200, "Orders retrieved", closedOrders);
           } else {
-            util.setSuccess(200, "No open orders found");
+            util.setError(404, "No closed orders found");
           }
           return util.send(res);
         } catch (error) {
@@ -99,8 +99,18 @@ class ShoptrackerController {
         }
         break;
       case !Number(id):
-        util.setError(404, "not implemented yet");
-        return util.send(res);
+        try {
+          const order = await ShoptrackerService.getOrder(id);
+          if (order) {
+            util.setSuccess(200, "Order retrieved", order);
+          } else {
+            util.setError(404, `Cannot find order with the id: ${id}`);
+          }
+          return util.send(res);
+        } catch (error) {
+          util.setError(400, error);
+          return util.send(res);
+        }
         break;
       default:
         util.setError(404, "not implemented yet");
@@ -128,7 +138,44 @@ class ShoptrackerController {
     }
   }
 
-  static async deleteOrder(req, res) {}
+  static async deleteOrder(req, res) {
+    const { id } = req.params;
+
+    try {
+      const deleted = await ShoptrackerService.deleteOrder(id);
+      if (deleted) {
+        util.setSuccess(200, "Order deleted", deleted);
+      } else {
+        util.setError(404, "Order was not found.");
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(400, error);
+      return util.send(res);
+    }
+  }
+
+  static async getOrderParts(req, res) {
+    const { id } = req.params;
+
+    if (!Number(id)) {
+      util.setError(400, "Please input a valid numeric value");
+      return util.send(res);
+    }
+
+    try {
+      const orderParts = await ShoptrackerService.getOrderParts(id);
+      if (orderParts.length > 0) {
+        util.setSuccess(200, "Order's parts found.", orderParts);
+      } else {
+        util.setError(404, "Order was not found.");
+      }
+      return util.send(res);
+    } catch {
+      util.setError(400, error);
+      return util.send(res);
+    }
+  }
 
   static async getOrderItems(req, res) {
     const { id } = req.params;
@@ -187,7 +234,34 @@ class ShoptrackerController {
   /**
    * * Order Item Controllers *
    */
-  static async createOrderItem(req, res) {}
+  static async createOrderItem(req, res) {
+    if (!req.body.orderitem) {
+      util.setError(
+        400,
+        "Orderitem creation requires an orderitem object with PO id and Part id"
+      );
+      return util.send(res);
+    }
+
+    const orderItemData = req.body.orderitem;
+    try {
+      const orderItem = await ShoptrackerService.createOrderItem(orderItemData);
+
+      if (!orderItem) {
+        util.setError(404, "Unable to create order item.");
+      } else {
+        util.setSuccess(
+          200,
+          "created orderitem with id " + orderItem.id,
+          orderItem
+        );
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(404, error);
+      return util.send(res);
+    }
+  }
   static async getOrderItem(req, res) {}
   static async updateOrderItem(req, res) {
     if (!req.body.id) {

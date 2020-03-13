@@ -155,9 +155,9 @@ class ShoptrackerService {
 
   static async prepAndCreateOrder(orderData, orderItemData) {
     const lastPO = await this.getLastPO();
-    const parts = await this.findOrCreateNewParts(OrderItemData);
+    const partIds = await this.findOrCreateNewParts(OrderItemData);
     const order = this.prepOrderData(orderData, orderItemData, lastPO);
-    const orderItems = this.prepOrderItemData(orderItemData, order, parts);
+    const orderItems = this.prepOrderItemData(orderItemData, order, partIds);
     const addedOrder = await this.createOrder(order, orderItems);
     console.log(addedOrder);
     return addedOrder.dataValues;
@@ -171,14 +171,14 @@ class ShoptrackerService {
     });
     console.log("last PO is " + lastPO);
     return {
-      poId: OrderData.id,
+      poId: OrderData.poId,
       num: OrderData.num,
       buyer: OrderData.buyer,
       note: OrderData.note,
       dateIssued: OrderData.dateIssued,
       dateLastModified: new Date().toLocaleString(),
       status: "PENDING",
-      dateRequested: OrderData.dateFirstShip,
+      dateRequested: OrderData.dateRequested,
       priority: 2,
       partQty: partQty,
       nextPO: lastPO
@@ -200,6 +200,23 @@ class ShoptrackerService {
       return await shopdb.po.findAll({ where: { status: status } });
     } catch (error) {
       throw error;
+    }
+  }
+
+  static async getOrder(poId) {
+    try {
+      return await shopdb.po.findOne({ where: { poId: poId } });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async deleteOrder(poId) {
+    try {
+      await shopdb.po.destroy({ where: { poId: poId } });
+      return true;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -249,6 +266,20 @@ class ShoptrackerService {
   /**
    * * Order Item Services *
    */
+
+  static async createOrderItem(orderItemData) {
+    try {
+      const date = new Date().toLocaleString();
+      return await shopdb.poitem.create({
+        poId: orderItemData.poId,
+        partId: orderItemData.poId,
+        qty: orderItemData.qty,
+        lastUpdate: date
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
 
   static async finishOrderItem(itemId) {
     try {
@@ -371,7 +402,7 @@ class ShoptrackerService {
   }
 
   static async findOrCreateNewParts(orderItemsData) {
-    let parts = [];
+    let partIds = [];
     const t = await shopdb.sequelize.transaction();
 
     try {
@@ -391,7 +422,7 @@ class ShoptrackerService {
           },
           transation: t
         });
-        parts.push(part);
+        partIds.push(part.id);
       }
 
       await t.commit();
@@ -400,7 +431,7 @@ class ShoptrackerService {
       throw error;
     }
 
-    return parts;
+    return partIds;
   }
 
   /**
