@@ -98,23 +98,23 @@ class ShoptrackerController {
           return util.send(res);
         }
         break;
-      case !Number(id):
-        try {
-          const order = await ShoptrackerService.getOrder(id);
-          if (order) {
-            util.setSuccess(200, "Order retrieved", order);
-          } else {
-            util.setError(404, `Cannot find order with the id: ${id}`);
-          }
-          return util.send(res);
-        } catch (error) {
-          util.setError(400, error);
-          return util.send(res);
+    }
+    if (!isNaN(id)) {
+      try {
+        const order = await ShoptrackerService.getOrder(id);
+        if (order) {
+          util.setSuccess(200, "Order retrieved", order);
+        } else {
+          util.setError(404, `Cannot find order with the id: ${id}`);
         }
-        break;
-      default:
-        util.setError(404, "not implemented yet");
         return util.send(res);
+      } catch (error) {
+        util.setError(400, error);
+        return util.send(res);
+      }
+    } else {
+      util.setError(404, "not implemented yet" + id + !isNaN(id));
+      return util.send(res);
     }
   }
 
@@ -213,15 +213,15 @@ class ShoptrackerController {
     }
 
     try {
-      const orderItems = await ShoptrackerService.getParts(id);
+      const orderParts = await ShoptrackerService.getOrderParts(id);
 
-      if (!orderItems) {
+      if (!orderParts) {
         util.setError(404, `Unable to find PO with id ${id}`);
       } else {
         util.setSuccess(
           200,
-          "Found " + orderItems.length + " parts on PO id " + id,
-          orderItems
+          "Found " + orderParts.length + " parts on PO id " + id,
+          orderParts
         );
       }
       return util.send(res);
@@ -262,7 +262,23 @@ class ShoptrackerController {
       return util.send(res);
     }
   }
-  static async getOrderItem(req, res) {}
+  static async getOrderItem(req, res) {
+    const { id } = req.params;
+
+    try {
+      const orderItem = await ShoptrackerService.getOrderItem(id);
+      if (orderItem) {
+        util.setSuccess(200, "OrderItem retrieved", orderItem);
+      } else {
+        util.setError(404, `Cannot find orderitem with the id: ${id}`);
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(400, error);
+      return util.send(res);
+    }
+  }
+
   static async updateOrderItem(req, res) {
     if (!req.body.id) {
       util.setError(400, "Please provide complete details");
@@ -288,7 +304,22 @@ class ShoptrackerController {
       return util.send(res);
     }
   }
-  static async deleteOrderItem(req, res) {}
+  static async deleteOrderItem(req, res) {
+    const { id } = req.params;
+
+    try {
+      const deleted = await ShoptrackerService.deleteOrderItem(id);
+      if (deleted) {
+        util.setSuccess(200, "OrderItem deleted", deleted);
+      } else {
+        util.setError(404, "OrderItem was not found.");
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(400, error);
+      return util.send(res);
+    }
+  }
 
   /**
    * * Part Controllers *
@@ -307,36 +338,67 @@ class ShoptrackerController {
       return util.send(res);
     }
   }
-  static async createPart(req, res) {}
+  static async createPart(req, res) {
+    if (!req.body.part) {
+      util.setError(400, "part creation requires a part object");
+      return util.send(res);
+    }
+
+    const partData = req.body.part;
+    try {
+      const part = await ShoptrackerService.createOrderItem(partData);
+
+      if (!part) {
+        util.setError(404, "Unable to create part.");
+      } else {
+        util.setSuccess(200, "created part with id " + part.id, part);
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(404, error);
+      return util.send(res);
+    }
+  }
+
   static async getPart(req, res) {
     const { id } = req.params;
-    let partData;
 
-    if (id == "all") {
+    switch (id) {
+      case "all":
+        try {
+          const partData = await ShoptrackerService.getAllParts();
+          if (partData.length > 0) {
+            util.setSuccess(200, "fetched part data", partData);
+          } else {
+            util.setError(404, "Unable to retrieve all parts");
+          }
+          return util.send(res);
+        } catch (error) {
+          util.setError(404, error);
+          return util.send(res);
+        }
+        break;
+    }
+
+    if (Number(id)) {
       try {
-        partData = await ShoptrackerService.getAllParts();
+        const partData = await ShoptrackerService.getPart(id);
+        if (!partData) {
+          util.setError(404, `Unable to find part with the id ${id}`);
+        } else {
+          util.setSuccess(200, "fetched part data", partData);
+        }
+        return util.send(res);
       } catch (error) {
         util.setError(404, error);
         return util.send(res);
       }
-    } else if (!Number(id)) {
+    } else {
       util.setError(400, "please input a valid numeric value");
-    } else {
-      try {
-        partData = await ShoptrackerService.getPart(id);
-      } catch (error) {
-        util.setError(404, error);
-        return util.send(res);
-      }
+      return util.send(res);
     }
-
-    if (!partData) {
-      util.setError(404, `Unable to find part with the id ${id}`);
-    } else {
-      util.setSuccess(200, "fetched part data", partData);
-    }
-    return util.send(res);
   }
+
   static async updatePart(req, res) {
     if (!req.body.id) {
       util.setError(400, "Please provide complete details");
@@ -357,7 +419,22 @@ class ShoptrackerController {
       return util.send(res);
     }
   }
-  static async deletePart(req, res) {}
+  static async deletePart(req, res) {
+    const { id } = req.params;
+
+    try {
+      const deleted = await ShoptrackerService.deletePart(id);
+      if (deleted) {
+        util.setSuccess(200, "Part deleted", deleted);
+      } else {
+        util.setError(404, "Part was not found.");
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(400, error);
+      return util.send(res);
+    }
+  }
 
   /**
    * * Queue Controllers *

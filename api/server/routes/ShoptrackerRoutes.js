@@ -3,15 +3,6 @@ import ShoptrackerController from '../controllers/ShoptrackerController';
 
 const router = Router();
 
-router.get('/', ShoptrackerController.getOpenOrders);
-router.get('/:id', ShoptrackerController.getOrderItems);
-router.get('/parts/all/', ShoptrackerController.getPartList);
-router.get('/part/:id', ShoptrackerController.getPartData);
-router.post('/update/part/', ShoptrackerController.updatePart);
-router.post('/update/order/', ShoptrackerController.updateOrder);
-router.post('/update/orderitem/', ShoptrackerController.updateOrderItem);
-router.post('/update/queue/', ShoptrackerController.updateQueue);
-
 /**
  * * Fishbowl Interaction Routes
  */
@@ -34,7 +25,8 @@ router.post('/order/create/', ShoptrackerController.createOrder);
 router.get('/order/read/:id', ShoptrackerController.getOrder); // id = all or allOpen
 router.put('/order/update/', ShoptrackerController.updateOrder);
 router.delete('/order/delete/:id', ShoptrackerController.deleteOrder);
-router.get('/order/items/:id', ShoptrackerController.getOrderItems)
+router.get('/order/items/:id', ShoptrackerController.getOrderItems);
+router.get('/order/parts/:id', ShoptrackerController.getOrderParts);
 
 /**
  * * Order Item Routes *
@@ -47,7 +39,7 @@ router.delete('/orderitem/delete/:id', ShoptrackerController.deleteOrderItem);
 /**
  * * Queue Routes *
  */
-router.put('/queue/update', ShoptrackerController.updateQueue)
+router.put('/queue/update', ShoptrackerController.updateQueue);
 
 // router.delete('/:id', BookController.deleteBook);
 

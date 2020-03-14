@@ -268,27 +268,80 @@ class ShoptrackerService {
    */
 
   static async createOrderItem(orderItemData) {
+    if (orderItemData.poId) {
+      try {
+        const date = new Date().toLocaleString();
+        return await shopdb.poitems.create({
+          poId: orderItemData.poId,
+          partId: orderItemData.partId,
+          qty: orderItemData.qty,
+          lastUpdate: date
+        });
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      return null;
+    }
+  }
+
+  static async getOrderItem(id) {
     try {
-      const date = new Date().toLocaleString();
-      return await shopdb.poitem.create({
-        poId: orderItemData.poId,
-        partId: orderItemData.poId,
-        qty: orderItemData.qty,
-        lastUpdate: date
+      return await shopdb.poitems.findOne({
+        where: { id: id }
       });
     } catch (error) {
       throw error;
     }
   }
 
+  static async updateOrderItem(orderItem) {
+    try {
+      const date = new Date().toLocaleString();
+      await shopdb.poitems.update(
+        {
+          poId: orderItem.poId,
+          partId: orderItem.partId,
+          qty: orderItem.qty,
+          lastUpdate: date
+        },
+        {
+          where: {
+            id: orderItem.id
+          }
+        }
+      );
+      return await shopdb.poitems.findOne({
+        where: { id: orderItem.id }
+      });
+    } catch (error) {}
+  }
+
+  static async deleteOrderItem(id) {
+    try {
+      const orderItem = await shopdb.poitems.findOne({
+        where: { id: id }
+      });
+      await shopdb.poitems.destroy({ where: { id: id } });
+      if (orderItem) {
+        await this.checkOrderCompletion(orderItem.poId);
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      return false;
+    }
+  }
+
   static async finishOrderItem(itemId) {
     try {
       const date = new Date().toLocaleString();
-      const item = await shopdb.poitem.update(
+      const item = await shopdb.poitems.update(
         { dateComplete: date },
         { where: { id: itemId } }
       );
-      const orderComplete = await this.checkOrderComplete(item.poId);
+      const orderComplete = await this.checkOrderCompletion(item.poId);
       if (orderComplete) {
         await shopdb.po.update(
           {
@@ -307,7 +360,7 @@ class ShoptrackerService {
 
   static async checkOrderCompletion(poId) {
     try {
-      const incompleteOrderItems = await shopdb.poitem.findAll({
+      const incompleteOrderItems = await shopdb.poitems.findAll({
         where: { poId: poId, dateComplete: null }
       });
 
@@ -316,28 +369,6 @@ class ShoptrackerService {
       } else {
         return true;
       }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async updateItem(item) {
-    try {
-      await shopdb.poitem.update(item, { where: { id: item.id } });
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async updateOrderItem(orderitem) {
-    console.log("in updateOrderItems");
-    try {
-      await shopdb.poitems.update(orderitem, { where: { id: orderitem.id } });
-      const updatedOrderItem = await shopdb.poitems.findOne({
-        where: { id: orderitem.id }
-      });
-      console.log(updatedOrderItem);
-      return updatedOrderItem;
     } catch (error) {
       throw error;
     }
@@ -360,6 +391,25 @@ class ShoptrackerService {
   /**
    * * Part Services *
    */
+  static async createPart(part) {
+    try {
+      return await shopdb.part.create(part);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getPart(id) {
+    try {
+      const part = await shopdb.part.findOne({
+        where: { id: id }
+      });
+      return part;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async updatePart(part) {
     try {
       await shopdb.part.update(part, { where: { id: part.id } });
@@ -369,6 +419,20 @@ class ShoptrackerService {
       return updatedPart;
     } catch (error) {
       throw error;
+    }
+  }
+
+  static async deletePart(id) {
+    try {
+      part = await shopdb.part.findOne({ where: { id: id } });
+      if (part) {
+        await shopdb.part.destroy({ where: { id: id } });
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      return false;
     }
   }
 
@@ -385,17 +449,6 @@ class ShoptrackerService {
   static async getAllParts() {
     try {
       return await shopdb.part.findAll();
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async getPart(id) {
-    try {
-      const part = await shopdb.part.findOne({
-        where: { id: id }
-      });
-      return part;
     } catch (error) {
       throw error;
     }
