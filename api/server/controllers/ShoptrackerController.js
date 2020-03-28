@@ -441,9 +441,7 @@ class ShoptrackerController {
    */
   static async updateQueue(req, res) {
     if (
-      !req.body.previousOrder ||
-      !req.body.movedOrder ||
-      !req.body.nextOrder
+      !req.body.movedOrder 
     ) {
       util.setError(400, "Please provide complete details");
       return util.send(res);
@@ -453,19 +451,38 @@ class ShoptrackerController {
     const movedOrder = req.body.movedOrder;
     const nextOrder = req.body.nextOrder;
 
+    console.log(previousOrder);
     try {
-      const updatedOrder = await ShoptrackerService.updateQueue(
+      const updated = await ShoptrackerService.updateQueue(
         previousOrder,
         movedOrder,
         nextOrder
       );
-      if (!updatedOrderItem) {
+      if (!updated) {
         util.setError(
           404,
-          `Cannot find orderitem with the id: ${orderitem.id}`
+          `Unable to update queue.`
         );
       } else {
-        util.setSuccess(200, "Orderitem updated.", updatedOrderItem);
+        util.setSuccess(200, "Queue updated", updated);
+      }
+      return util.send(res);
+    } catch (error) {
+      util.setError(404, error);
+      return util.send(res);
+    }
+  }
+
+  static async getLastPO (req, res) {
+    try {
+      const lastPO = await ShoptrackerService.getLastPO();
+      if (!lastPO) {
+        util.setError(
+          404,
+          `Cannot find last PO`
+        );
+      } else {
+        util.setSuccess(200, "Last PO retrieved.", lastPO);
       }
       return util.send(res);
     } catch (error) {

@@ -508,30 +508,75 @@ class ShoptrackerService {
     }
   }
 
-  static updateQueue(previousOrder, movedOrder, nextOrder) {
+  static async updateQueue(previousOrder, movedOrder, nextOrder) {
+    console.log("I'm updating queue");
     try {
-      shopdb.transaction(t => {
-        shopdb.po.update(
-          { nextPO: movedOrder },
-          { where: { poId: previousOrder }, transaction: t }
-        );
-        shopdb.po.update(
-          { nextPO: nextOrder },
-          { where: { poId: movedOrder }, transaction: t }
-        );
-      });
-    } catch (error) {
-      throw error;
-    }
-  }
+      //if moved to first, nextOrder's nextPO will be movedOrder and movedOrder's nextPO will be 0
+      shopdb.sequelize.transaction(async t => {
+        const lastPo = await this.getLastPO();
+        const oldNextOrder = await this.getNextOrder(movedOrder);
+        if (movedOrder === lastPo) {
+          const newLastPo = await this.getNextOrder(lastPo);
+          await shopdb.lastpo.update(
+            { lastPO: newLastPo },
+            { where: { id: 1 }, transaction: t }
+          );
+        } else {
+          await shopdb.po.update(
+            { nextPo: oldNextOrder },
+            { where: { nextPo: movedOrder }, transaction: t }
+          )
+        }
 
+        console.log("I got past updating lastPO");
+        if (previousOrder === 0) {
+          console.log("I'm going in first");
+          await shopdb.po.update(
+            { nextPo: movedOrder },
+            { where: { poId: nextOrder }, transaction: t }
+          );
+          await shopdb.po.update(
+            { nextPo: 0 },
+            { where: { poId: movedOrder }, transaction: t }
+          );
+        } else if (nextOrder === 0) {
+          console.log("I'm going in last");
+          await shopdb.lastpo.update(
+            { lastPO: movedOrder },
+            { where: { id: 1 }, transaction: t }
+          );
+          await shopdb.po.update(
+            { nextPo: previousOrder },
+            { where: { poId: movedOrder }, transaction: t }
+          );
+        } else {
+          console.log("I'm going inbetween");
+          await shopdb.po.update(
+            { nextPo: movedOrder },
+            { where: { poId: nextOrder }, transaction: t }
+          );
+          await shopdb.po.update(
+            { nextPo: previousOrder },
+            { where: { poId: movedOrder }, transaction: t }
+          );
+        }
+      });
+      await t.commit();
+      return true;
+    } catch (error) {
+      await t.rollback();
+      console.log(error);
+      return false;
+    }
+  } 
+  
   static async getNextOrder(poId) {
     try {
       const order = await shopdb.po.findOne({
-        attributes: nextPO,
+        attributes: ["nextPo"],
         where: { poId: poId }
       });
-      return order.nextPO;
+      return order.nextPo;
     } catch (error) {
       throw error;
     }

@@ -4,10 +4,9 @@ import ShoptrackerController from '../controllers/ShoptrackerController';
 const router = Router();
 
 /**
- * * Fishbowl Interaction Routes
+ * * Fishbowl Interaction Routes *
  */
 router.get('/add/:id', ShoptrackerController.addFishbowlOrder);
-
 
 /**
  * * Part Routes *
@@ -40,6 +39,7 @@ router.delete('/orderitem/delete/:id', ShoptrackerController.deleteOrderItem);
  * * Queue Routes *
  */
 router.put('/queue/update', ShoptrackerController.updateQueue);
+router.get('/queue/lastpo', ShoptrackerController.getLastPO);
 
 // router.delete('/:id', BookController.deleteBook);
 
