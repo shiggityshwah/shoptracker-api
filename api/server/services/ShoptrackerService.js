@@ -45,7 +45,7 @@ class ShoptrackerService {
   ) {
     let partQty = 0;
     console.log("prepping order data");
-    fishbowlOrderItemData.map(item => {
+    fishbowlOrderItemData.map((item) => {
       partQty += parseInt(item.qtyToFulfill);
     });
     console.log("last PO is " + lastPO);
@@ -60,7 +60,7 @@ class ShoptrackerService {
       dateRequested: fishbowlOrderData.dateFirstShip,
       priority: 2,
       partQty: partQty,
-      nextPO: lastPO
+      nextPO: lastPO,
     };
   }
 
@@ -72,7 +72,7 @@ class ShoptrackerService {
         poId: order.poId,
         partId: partIds[i],
         qty: fishbowlOrderItemData[i].qtyToFulfill,
-        lastUpdate: new Date().toLocaleString()
+        lastUpdate: new Date().toLocaleString(),
       });
     }
 
@@ -88,14 +88,14 @@ class ShoptrackerService {
         const [part, created] = await shopdb.part.findOrCreate({
           where: {
             num: item.partNum,
-            rev: item.revLevel
+            rev: item.revLevel,
           },
           defaults: {
             num: item.partNum,
             rev: item.revLevel,
-            desc: item.description
+            desc: item.description,
           },
-          transation: t
+          transation: t,
         });
         partIds.push(part.id);
       }
@@ -120,7 +120,7 @@ class ShoptrackerService {
       console.log(order);
       const [addedOrder, created] = await shopdb.po.findOrCreate({
         where: {
-          poId: order.poId
+          poId: order.poId,
         },
         defaults: {
           num: order.num,
@@ -132,8 +132,8 @@ class ShoptrackerService {
           dateRequested: order.dateRequested,
           priority: order.priority,
           partQty: order.partQty,
-          nextPo: order.nextPO
-        }
+          nextPo: order.nextPO,
+        },
       });
       console.log("Created is " + created);
 
@@ -143,7 +143,7 @@ class ShoptrackerService {
         shopdb.lastpo.update(
           { lastPO: order.poId },
           {
-            where: { id: 1 }
+            where: { id: 1 },
           }
         );
       }
@@ -166,7 +166,7 @@ class ShoptrackerService {
   static prepOrderData(OrderData, OrderItemData, lastPO) {
     let partQty = 0;
     console.log("prepping order data");
-    OrderItemData.map(item => {
+    OrderItemData.map((item) => {
       partQty += parseInt(item.qty);
     });
     console.log("last PO is " + lastPO);
@@ -181,14 +181,14 @@ class ShoptrackerService {
       dateRequested: OrderData.dateRequested,
       priority: 2,
       partQty: partQty,
-      nextPO: lastPO
+      nextPO: lastPO,
     };
   }
 
   static async getAllOpenOrders() {
     try {
       return await shopdb.po.findAll({
-        where: { status: { [Op.ne]: "CLOSED" } }
+        where: { status: { [Op.ne]: "CLOSED" } },
       });
     } catch (error) {
       throw error;
@@ -227,7 +227,7 @@ class ShoptrackerService {
     try {
       for (const item of orderItems) {
         const part = await shopdb.part.findOne({
-          where: { id: item.partId }
+          where: { id: item.partId },
         });
         orderParts.push(Object.assign(part.dataValues, item));
       }
@@ -240,9 +240,9 @@ class ShoptrackerService {
   static async getOrderItems(id) {
     try {
       const orderItemData = await shopdb.poitems.findAll({
-        where: { poId: id }
+        where: { poId: id },
       });
-      const orderItems = orderItemData.map(orderItem => orderItem.dataValues);
+      const orderItems = orderItemData.map((orderItem) => orderItem.dataValues);
       console.log(orderItems);
       return orderItems;
     } catch (error) {
@@ -255,7 +255,7 @@ class ShoptrackerService {
     try {
       await shopdb.po.update(order, { where: { id: order.id } });
       const updatedOrder = await shopdb.po.findOne({
-        where: { id: order.id }
+        where: { id: order.id },
       });
       return updatedOrder;
     } catch (error) {
@@ -275,7 +275,7 @@ class ShoptrackerService {
           poId: orderItemData.poId,
           partId: orderItemData.partId,
           qty: orderItemData.qty,
-          lastUpdate: date
+          lastUpdate: date,
         });
       } catch (error) {
         throw error;
@@ -288,7 +288,7 @@ class ShoptrackerService {
   static async getOrderItem(id) {
     try {
       return await shopdb.poitems.findOne({
-        where: { id: id }
+        where: { id: id },
       });
     } catch (error) {
       throw error;
@@ -303,16 +303,16 @@ class ShoptrackerService {
           poId: orderItem.poId,
           partId: orderItem.partId,
           qty: orderItem.qty,
-          lastUpdate: date
+          lastUpdate: date,
         },
         {
           where: {
-            id: orderItem.id
-          }
+            id: orderItem.id,
+          },
         }
       );
       return await shopdb.poitems.findOne({
-        where: { id: orderItem.id }
+        where: { id: orderItem.id },
       });
     } catch (error) {}
   }
@@ -320,7 +320,7 @@ class ShoptrackerService {
   static async deleteOrderItem(id) {
     try {
       const orderItem = await shopdb.poitems.findOne({
-        where: { id: id }
+        where: { id: id },
       });
       await shopdb.poitems.destroy({ where: { id: id } });
       if (orderItem) {
@@ -347,7 +347,7 @@ class ShoptrackerService {
           {
             dateComplete: date,
             dateLastModified: date,
-            status: "COMPLETE"
+            status: "COMPLETE",
           },
           { where: { poId: item.poId } }
         );
@@ -361,7 +361,7 @@ class ShoptrackerService {
   static async checkOrderCompletion(poId) {
     try {
       const incompleteOrderItems = await shopdb.poitems.findAll({
-        where: { poId: poId, dateComplete: null }
+        where: { poId: poId, dateComplete: null },
       });
 
       if (incompleteOrderItems.length > 0) {
@@ -382,7 +382,7 @@ class ShoptrackerService {
         poId: order.poId,
         partId: parts[i].id,
         qty: OrderItemData[i].qty,
-        lastUpdate: new Date().toLocaleString()
+        lastUpdate: new Date().toLocaleString(),
       });
     }
     return orderItems;
@@ -402,7 +402,7 @@ class ShoptrackerService {
   static async getPart(id) {
     try {
       const part = await shopdb.part.findOne({
-        where: { id: id }
+        where: { id: id },
       });
       return part;
     } catch (error) {
@@ -414,7 +414,7 @@ class ShoptrackerService {
     try {
       await shopdb.part.update(part, { where: { id: part.id } });
       const updatedPart = await shopdb.part.findOne({
-        where: { id: part.id }
+        where: { id: part.id },
       });
       return updatedPart;
     } catch (error) {
@@ -439,7 +439,7 @@ class ShoptrackerService {
   static async getPartList() {
     try {
       return await shopdb.part.findAll({
-        attributes: ["id", "num", "desc"]
+        attributes: ["id", "num", "desc"],
       });
     } catch (error) {
       throw error;
@@ -463,7 +463,7 @@ class ShoptrackerService {
         const [part, created] = await shopdb.part.findOrCreate({
           where: {
             num: item.num,
-            rev: item.rev
+            rev: item.rev,
           },
           defaults: {
             num: item.num,
@@ -471,9 +471,9 @@ class ShoptrackerService {
             desc: item.desc,
             processing: item.processing,
             material: item.material,
-            timeEstimate: item.timeEstimate
+            timeEstimate: item.timeEstimate,
           },
-          transation: t
+          transation: t,
         });
         partIds.push(part.id);
       }
@@ -492,14 +492,14 @@ class ShoptrackerService {
    */
   static updateListOrder(updatedList) {
     try {
-      shopdb.transaction(t => {
-        updatedList.map(async order => {
+      shopdb.transaction((t) => {
+        updatedList.map(async (order) => {
           await shopdb.po.findOrCreate({
             where: {
               poId: order.poId,
-              nextPO: order.nextPO
+              nextPO: order.nextPO,
             },
-            transation: t
+            transation: t,
           });
         });
       });
@@ -510,71 +510,95 @@ class ShoptrackerService {
 
   static async updateQueue(previousOrder, movedOrder, nextOrder) {
     console.log("I'm updating queue");
-    try {
-      //if moved to first, nextOrder's nextPO will be movedOrder and movedOrder's nextPO will be 0
-      shopdb.sequelize.transaction(async t => {
-        const lastPo = await this.getLastPO();
-        const oldNextOrder = await this.getNextOrder(movedOrder);
-        if (movedOrder === lastPo) {
-          const newLastPo = await this.getNextOrder(lastPo);
-          await shopdb.lastpo.update(
-            { lastPO: newLastPo },
-            { where: { id: 1 }, transaction: t }
-          );
-        } else {
-          await shopdb.po.update(
-            { nextPo: oldNextOrder },
-            { where: { nextPo: movedOrder }, transaction: t }
-          )
-        }
+    const lastPo = await this.getLastPO();
+    const oldNextOrder = await this.getNextOrder(movedOrder);
+    const newLastPo = await this.getNextOrder(lastPo);
+    return new Promise((resolve, reject) => {
+      try {
+        //if moved to first, nextOrder's nextPO will be movedOrder and movedOrder's nextPO will be 0
+        shopdb.sequelize.transaction(async (t) => {
+          if (movedOrder === lastPo) {
+            shopdb.lastpo.update(
+              { lastPO: newLastPo },
+              { where: { id: 1 }, transaction: t }
+            );
+          } else {
+            shopdb.po.update(
+              { nextPo: oldNextOrder },
+              { where: { nextPo: movedOrder }, transaction: t }
+            );
+          }
 
-        console.log("I got past updating lastPO");
-        if (previousOrder === 0) {
-          console.log("I'm going in first");
-          await shopdb.po.update(
-            { nextPo: movedOrder },
-            { where: { poId: nextOrder }, transaction: t }
-          );
-          await shopdb.po.update(
-            { nextPo: 0 },
-            { where: { poId: movedOrder }, transaction: t }
-          );
-        } else if (nextOrder === 0) {
-          console.log("I'm going in last");
-          await shopdb.lastpo.update(
-            { lastPO: movedOrder },
-            { where: { id: 1 }, transaction: t }
-          );
-          await shopdb.po.update(
-            { nextPo: previousOrder },
-            { where: { poId: movedOrder }, transaction: t }
-          );
-        } else {
-          console.log("I'm going inbetween");
-          await shopdb.po.update(
-            { nextPo: movedOrder },
-            { where: { poId: nextOrder }, transaction: t }
-          );
-          await shopdb.po.update(
-            { nextPo: previousOrder },
-            { where: { poId: movedOrder }, transaction: t }
-          );
-        }
-      });
-      await t.commit();
-      return true;
-    } catch (error) {
-      await t.rollback();
-      console.log(error);
-      return false;
-    }
-  } 
-  
+          console.log("I got past updating lastPO");
+          if (previousOrder === 0) {
+            console.log("I'm going in first");
+            shopdb.po.update(
+              { nextPo: movedOrder },
+              { where: { poId: nextOrder }, transaction: t }
+            );
+            shopdb.po.update(
+              { nextPo: 0 },
+              { where: { poId: movedOrder }, transaction: t }
+            );
+          } else if (nextOrder === 0) {
+            console.log("I'm going in last");
+            shopdb.lastpo.update(
+              { lastPO: movedOrder },
+              { where: { id: 1 }, transaction: t }
+            );
+            shopdb.po.update(
+              { nextPo: previousOrder },
+              { where: { poId: movedOrder }, transaction: t }
+            );
+          } else {
+            console.log("I'm going inbetween");
+            shopdb.po.update(
+              { nextPo: movedOrder },
+              { where: { poId: nextOrder }, transaction: t }
+            );
+            shopdb.po.update(
+              { nextPo: previousOrder },
+              { where: { poId: movedOrder }, transaction: t }
+            );
+          }
+        });
+        t.commit();
+        resolve();
+      } catch (error) {
+        t.rollback();
+        console.log(error);
+        reject();
+      }
+    });
+  }
+
+  static async setNextOrder(po, nextPo) {
+    console.log("setting next order...");
+    return new Promise((resolve, reject) => {
+      try {
+        shopdb.po.update(
+          {
+            nextPo: nextPo,
+          },
+          {
+            where: {
+              poId: po,
+            },
+          }
+        );
+        resolve();
+      } catch (error) {
+        console.log("I'm failing");
+        reject();
+      }
+    });
+  }
+
   static async getNextOrder(poId) {
     try {
       const order = await shopdb.po.findOne({
         attributes: ["nextPo"],
-        where: { poId: poId }
+        where: { poId: poId },
       });
       return order.nextPo;
     } catch (error) {
@@ -585,9 +609,30 @@ class ShoptrackerService {
   static async getLastPO() {
     const lastOrder = await shopdb.lastpo.findOne({
       attribute: ["lastPO"],
-      where: { id: 1 }
+      where: { id: 1 },
     });
     return lastOrder.lastPO;
+  }
+
+  static async setLastPO(po) {
+    console.log("lastpo is " + po);
+    return new Promise((resolve, reject) => {
+      try {
+        shopdb.lastpo.update(
+          {
+            lastPO: po,
+          },
+          {
+            where: {
+              id: 1,
+            },
+          }
+        );
+        resolve(true);
+      } catch (error) {
+        reject(false);
+      }
+    });
   }
 }
 
