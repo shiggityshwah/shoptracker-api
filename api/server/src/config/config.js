@@ -12,25 +12,25 @@ module.exports = {
         database: process.env.SHOPDB_NAME,
         username: process.env.SHOPDB_USER,
         password: process.env.SHOPDB_PASS,
-        port: process.env.SHOPDB_PORT,
         host: process.env.SHOPDB_HOST,
+        port: process.env.SHOPDB_PORT,
         dialect: "mysql",
         define: {
-          timestamps: false
-        }
+          timestamps: false,
+        },
       },
       fbdb: {
         database: process.env.FBDB_NAME,
         username: process.env.FBDB_USER,
         password: process.env.FBDB_PASS,
-        port: process.env.FBDB_PORT,
         host: process.env.FBDB_HOST,
+        port: process.env.FBDB_PORT,
         dialect: "mysql",
         define: {
-          timestamps: false
-        }
-      }
-    }
+          timestamps: false,
+        },
+      },
+    },
   },
 
   shopdb: {
@@ -41,8 +41,8 @@ module.exports = {
     port: process.env.SHOPDB_PORT,
     dialect: "mysql",
     define: {
-      timestamps: false
-    }
+      timestamps: false,
+    },
   },
 
   fbdb: {
@@ -53,8 +53,8 @@ module.exports = {
     port: process.env.FBDB_PORT,
     dialect: "mysql",
     define: {
-      timestamps: false
-    }
+      timestamps: false,
+    },
   },
 
   test: {
@@ -62,7 +62,7 @@ module.exports = {
     username: "root",
     password: null,
     host: "127.0.0.1",
-    dialect: "mysql"
+    dialect: "mysql",
   },
 
   production: {
@@ -72,7 +72,7 @@ module.exports = {
     host: process.env.DB_HOST,
     dialect: "mysql",
     define: {
-      timestamps: false
-    }
-  }
+      timestamps: false,
+    },
+  },
 };
