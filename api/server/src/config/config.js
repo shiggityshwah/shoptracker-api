@@ -37,6 +37,7 @@ module.exports = {
     database: process.env.SHOPDB_NAME,
     username: process.env.SHOPDB_USER,
     password: process.env.SHOPDB_PASS,
+    port: process.env.SHOPDB_PORT,
     host: process.env.SHOPDB_HOST,
     dialect: "mysql",
     define: {
