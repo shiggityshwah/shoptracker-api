@@ -37,8 +37,8 @@ module.exports = {
     database: process.env.SHOPDB_NAME,
     username: process.env.SHOPDB_USER,
     password: process.env.SHOPDB_PASS,
-    port: process.env.SHOPDB_PORT,
     host: process.env.SHOPDB_HOST,
+    port: process.env.SHOPDB_PORT,
     dialect: "mysql",
     define: {
       timestamps: false
@@ -49,8 +49,8 @@ module.exports = {
     database: process.env.FBDB_NAME,
     username: process.env.FBDB_USER,
     password: process.env.FBDB_PASS,
-    port: process.env.FBDB_PORT,
     host: process.env.FBDB_HOST,
+    port: process.env.FBDB_PORT,
     dialect: "mysql",
     define: {
       timestamps: false
