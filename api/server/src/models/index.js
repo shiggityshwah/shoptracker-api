@@ -57,14 +57,22 @@ if (config.environment === 'production') {
      config.databases.shopdb.database,
      config.databases.shopdb.username,
      config.databases.shopdb.password,
-     config.databases.shopdb
+     {
+      host: process.env.SHOPDB_HOST,
+      port: process.env.SHOPDB_PORT,
+      dialect: 'mysql'
+    }
   );
 
   fishbowlSequelize = new Sequelize(
     config.databases.fbdb.database,
     config.databases.fbdb.username,
     config.databases.fbdb.password,
-    config.databases.fbdb
+    {
+      host: process.env.FBDB_HOST,
+      port: process.env.FBDB_PORT,
+      dialect: 'mysql'
+    }
  );
 }
 
